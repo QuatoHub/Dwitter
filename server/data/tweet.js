@@ -1,46 +1,43 @@
-let tweets = [
-    {
-        id: '1',
-        text: '드림코더 화이팅',
-        createAt: Date.now().toString(),
-        name: 'Bob',
-        username: 'bob',
-        usl: 'https://widgetwhats.com/app.uploads/2019/11/free-profile-photo-whatsapp-1.png',
-    }
-];
+import { db } from '../db/database.js';
+
+const SELECT_JOIN =
+  'SELECT tw.id, tw.text, tw.createdAt, tw.userId, us.username, us.name, us.url FROM tweets as tw JOIN users as us ON tw.userId=us.id';
+const ORDER_DESC = 'ORDER BY tw.createdAt DESC';
 
 export async function getAll() {
-    return tweets;
+  return db
+    .execute(`${SELECT_JOIN} ${ORDER_DESC}`) //
+    .then((result) => result[0]);
 }
 
 export async function getAllByUsername(username) {
-    return tweets.filter((tweet) => tweet.username === username);
+  return db
+    .execute(`${SELECT_JOIN} WHERE username=? ${ORDER_DESC}`, [username]) //
+    .then((result) => result[0]);
 }
 
 export async function getById(id) {
-    return tweets.find((tweet) => tweet.id === id);
+  return db
+    .execute(`${SELECT_JOIN} WHERE tw.id=?`, [id])
+    .then((result) => result[0][0]);
 }
 
-export async function create(text, name, username) {
-    const tweet = {
-        id: Date.now().toString(),
-        text,
-        createdAt: new Date(),
-        name,
-        username,
-    };
-    tweets = [tweet, ...tweets];
-    return tweet;
+export async function create(text, userId) {
+  return db
+    .execute('INSERT INTO tweets (text, createdAt, userId) VALUES(?,?,?)', [
+      text,
+      new Date(),
+      userId,
+    ])
+    .then((result) => getById(result[0].insertId));
 }
 
 export async function update(id, text) {
-    const tweet = tweets.find((tweet) => tweet.id === id);
-    if (tweet) {
-        tweet.text = text;
-    };
-    return tweet;
+  return db
+    .execute('UPDATE tweets SET text=? WHERE id=?', [text, id])
+    .then(() => getById(id));
 }
 
 export async function remove(id) {
-    tweets = tweets.filter(tweet => tweet.id !== id);
+  return db.execute('DELETE FROM tweets WHERE id=?', [id]);
 }
